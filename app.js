@@ -4,11 +4,16 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const mongoose = require("mongoose");
+<<<<<<< HEAD
 const session = require('express-session');
 const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const findOrCreate = require('mongoose-findorcreate');
+=======
+const bcrypt = require("bcrypt");
+const saltRounds = 10;
+>>>>>>> parent of 4e83497... Level 5 - Cookies and Sessions
 
 const app = express();
 
@@ -18,17 +23,7 @@ app.use(bodyParser.urlencoded({
   extended: true
 }));
 
-app.use(session({
-  secret: "Our little secret.",
-  resave: false,
-  saveUninitialized: false
-}));
-
-app.use(passport.initialize());
-app.use(passport.session());
-
 mongoose.connect("mongodb://localhost:27017/userDB", {useNewUrlParser: true});
-mongoose.set("useCreateIndex", true);
 
 const userSchema = new mongoose.Schema ({
   email: String,
@@ -37,6 +32,7 @@ const userSchema = new mongoose.Schema ({
   secret: String
 });
 
+<<<<<<< HEAD
 userSchema.plugin(passportLocalMongoose);
 userSchema.plugin(findOrCreate);
 
@@ -69,6 +65,11 @@ passport.use(new GoogleStrategy({
   }
 ));
 
+=======
+
+const User = new mongoose.model("User", userSchema);
+
+>>>>>>> parent of 4e83497... Level 5 - Cookies and Sessions
 app.get("/", function(req, res){
   res.render("home");
 });
@@ -92,6 +93,7 @@ app.get("/register", function(req, res){
   res.render("register");
 });
 
+<<<<<<< HEAD
 app.get("/secrets", function(req, res){
   User.find({"secret": {$ne: null}}, function(err, foundUsers){
     if (err){
@@ -137,38 +139,43 @@ app.get("/logout", function(req, res){
   res.redirect("/");
 });
 
+=======
+>>>>>>> parent of 4e83497... Level 5 - Cookies and Sessions
 app.post("/register", function(req, res){
 
-  User.register({username: req.body.username}, req.body.password, function(err, user){
-    if (err) {
-      console.log(err);
-      res.redirect("/register");
-    } else {
-      passport.authenticate("local")(req, res, function(){
-        res.redirect("/secrets");
-      });
-    }
+  bcrypt.hash(req.body.password, saltRounds, function(err, hash) {
+    const newUser =  new User({
+      email: req.body.username,
+      password: hash
+    });
+    newUser.save(function(err){
+      if (err) {
+        console.log(err);
+      } else {
+        res.render("secrets");
+      }
+    });
   });
 
 });
 
 app.post("/login", function(req, res){
+  const username = req.body.username;
+  const password = req.body.password;
 
-  const user = new User({
-    username: req.body.username,
-    password: req.body.password
-  });
-
-  req.login(user, function(err){
+  User.findOne({email: username}, function(err, foundUser){
     if (err) {
       console.log(err);
     } else {
-      passport.authenticate("local")(req, res, function(){
-        res.redirect("/secrets");
-      });
+      if (foundUser) {
+        bcrypt.compare(password, foundUser.password, function(err, result) {
+          if (result === true) {
+            res.render("secrets");
+          }
+        });
+      }
     }
   });
-
 });
 
 
